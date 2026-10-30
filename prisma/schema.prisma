@@ -1,0 +1,155 @@
+// BMS / RentFlow — multi-tenant schema for residential & commercial property associations.
+//
+// The models below follow product_requirements_document.md §4 (Database Schema) exactly.
+// Four nullable columns are added because the functional specification requires them and the
+// PRD schema has no home for them:
+//   Building.stampUrl / Building.stampFileId  — official association stamp hosted on ImageKit
+//   Profile.passwordHash                      — credential login (ADMIN + USER)
+//   Profile.avatarUrl                         — supervisor profile picture hosted on ImageKit
+//
+// Multi-tenancy is enforced by Postgres Row Level Security, not only by application code:
+//   * every table lives in `public` and has RLS enabled (see prisma/migrations/0003_row_level_security)
+//   * `profiles.id` is the identity carried in the session JWT (`sub` claim) and read by
+//     the policies through `private.current_user_id()`
+//   * `profiles.buildingId` is the tenant key every other table is scoped by
+//   * `directUrl` is required because pooled connections cannot run DDL
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Building {
+  id             String        @id @default(uuid())
+  name           String // e.g., جمعية ملاك برج الوفاء السكني
+  registrationNo String? // e.g., 2423502100
+  unifiedId      String? // e.g., 7051508831
+  address        String?
+  iban           String? // SA8010000067700000562109
+  chairmanName   String? // e.g., جمال محمد المرزوقي
+  stampUrl       String? // official association stamp (ImageKit URL)
+  stampFileId    String? // ImageKit file id of the official stamp
+  units          Unit[]
+  revenues       Revenue[]
+  expenses       Expense[]
+  utilityBills   UtilityBill[]
+  contracts      Contract[]
+  users          Profile[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Profile {
+  id           String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  email        String    @unique
+  name         String
+  passwordHash String?
+  avatarUrl    String?
+  role         Role      @default(USER)
+  buildingId   String?
+  building     Building? @relation(fields: [buildingId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([buildingId])
+  @@map("profiles")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Unit {
+  id                 String   @id @default(uuid())
+  buildingId         String
+  building           Building @relation(fields: [buildingId], references: [id])
+  unitNumber         String // e.g., "35", "110", "27 + 136"
+  floor              String?
+  titleDeedNo        String?
+  hasParking         Boolean  @default(false)
+  parkingCardNo      String?
+  electricityMeterNo String?
+  waterMeterNo       String?
+  ownerName          String?
+  ownerPhone         String?
+  tenantName         String?
+  tenantPhone        String?
+  rentalDeed         String?
+  unitArea           Float?
+  annualFee          Float    @default(0.0)
+  additionalFees     Float    @default(0.0)
+  photoUrl           String? // unit photo (ImageKit URL)
+  revenues           Revenue[]
+  createdAt          DateTime @default(now())
+}
+
+enum PaymentChannel {
+  CASH // 1 - نقدا
+  BANK_TRANSFER // 2 - تحويل
+  OTHER // 3 - اخرى / مواقف
+}
+
+model Revenue {
+  id             String         @id @default(uuid())
+  buildingId     String
+  building       Building       @relation(fields: [buildingId], references: [id])
+  unitId         String?
+  unit           Unit?          @relation(fields: [unitId], references: [id])
+  voucherNo      String // e.g., #43, #44, #110
+  date           DateTime
+  fiscalYear     Int // e.g., 2026
+  fiscalMonth    Int // e.g., 8
+  amount         Float
+  paymentChannel PaymentChannel @default(BANK_TRANSFER)
+  notes          String?
+  createdAt      DateTime       @default(now())
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  buildingId  String
+  building    Building @relation(fields: [buildingId], references: [id])
+  itemNo      Int // 1 to 12
+  category    String // e.g., رواتب, أدوات النظافة, إصلاحات السباكة
+  amount      Float
+  fiscalYear  Int // e.g., 2026
+  fiscalMonth Int // e.g., 8
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model UtilityBill {
+  id          String   @id @default(uuid())
+  buildingId  String
+  building    Building @relation(fields: [buildingId], references: [id])
+  type        String // Telecom, Power Meter A, Power Meter B, Water
+  accountNo   String // e.g., 1821913005, 5651641486
+  meterNo     String? // e.g., HLY2020627038687
+  amount      Float
+  paymentDate DateTime
+  fiscalYear  Int
+  fiscalMonth Int
+}
+
+model Contract {
+  id           String    @id @default(uuid())
+  buildingId   String
+  building     Building  @relation(fields: [buildingId], references: [id])
+  title        String // e.g., عقد صيانة المصاعد
+  totalAmount  Float // e.g., 14000
+  itemCount    Int? // e.g., 7 elevators
+  startDate    DateTime // 2026-01-01
+  endDate      DateTime // 2027-01-01
+  nextDueDate  DateTime? // 2026-07-01
+  balanceDue   Float?
+  vendor       String?
+  paidAmount   Float       @default(0.0)
+  installment  Float?
+  paymentNote  String?
+}
