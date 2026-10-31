@@ -35,23 +35,29 @@ export async function withTenant<T>(
   context: TenantContext,
   run: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`select set_config('request.jwt.claims', ${claimsFor(context)}, true)`;
+  // Every model operation gets its own transaction, so a page that reads six
+  // tables in parallel asks the pool for six connections at once. The default
+  // two second wait is too short for that on a shared pooler.
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`select set_config('request.jwt.claims', ${claimsFor(context)}, true)`;
 
-    if (RUNTIME_ROLE !== "none") {
-      try {
-        await tx.$queryRaw`select set_config('role', ${RUNTIME_ROLE}, true)`;
-      } catch {
-        throw new Error(
-          `DATABASE_RUNTIME_ROLE "${RUNTIME_ROLE}" cannot be assumed by the database role. ` +
-            "Apply prisma/migrations/0003_row_level_security, grant that role to the connection " +
-            "role, or set DATABASE_RUNTIME_ROLE=none to run without database-level isolation.",
-        );
+      if (RUNTIME_ROLE !== "none") {
+        try {
+          await tx.$queryRaw`select set_config('role', ${RUNTIME_ROLE}, true)`;
+        } catch {
+          throw new Error(
+            `DATABASE_RUNTIME_ROLE "${RUNTIME_ROLE}" cannot be assumed by the database role. ` +
+              "Apply prisma/migrations/0003_row_level_security, grant that role to the connection " +
+              "role, or set DATABASE_RUNTIME_ROLE=none to run without database-level isolation.",
+          );
+        }
       }
-    }
 
-    return run(tx);
-  });
+      return run(tx);
+    },
+    { maxWait: 15_000, timeout: 30_000 },
+  );
 }
 
 function runModelOperation(
