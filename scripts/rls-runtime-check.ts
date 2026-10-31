@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { withTenant } from "@/lib/db/tenant";
 import type { SessionUser } from "@/lib/types";
+import { loadEnvIntoProcess } from "./load-env";
+
+loadEnvIntoProcess();
 
 let failures = 0;
 

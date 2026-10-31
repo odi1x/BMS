@@ -10,6 +10,9 @@ import {
   demoUsers,
   demoUtilityBills,
 } from "../src/lib/demo-data";
+import { loadEnvIntoProcess } from "../scripts/load-env";
+
+loadEnvIntoProcess();
 
 const seedUrl = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
 

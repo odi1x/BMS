@@ -1,24 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
+import { loadEnvFile } from "./load-env";
 
-export function loadEnvFile(): Record<string, string> {
-  if (!existsSync(".env")) return {};
-  const values: Record<string, string> = {};
-  for (const line of readFileSync(".env", "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const separator = trimmed.indexOf("=");
-    if (separator === -1) continue;
-    const key = trimmed.slice(0, separator).trim();
-    const value = trimmed
-      .slice(separator + 1)
-      .trim()
-      .replace(/^["']/, "")
-      .replace(/["']$/, "");
-    values[key] = value;
-  }
-  return values;
-}
+export { loadEnvFile };
 
 export function connectionUrls(): { databaseUrl: string; directUrl: string } {
   const env = { ...loadEnvFile(), ...process.env };
@@ -70,7 +53,7 @@ export async function grantRuntimeRole(): Promise<void> {
     }
 
     const members = await prisma.$queryRawUnsafe<{ member: string; bypassrls: boolean }[]>(
-      `select m.rolname as member, m.rolbypassrls as bypassrls
+      `select distinct m.rolname as member, m.rolbypassrls as bypassrls
          from pg_auth_members am
          join pg_roles r on r.oid = am.roleid
          join pg_roles m on m.oid = am.member
@@ -85,10 +68,10 @@ export async function grantRuntimeRole(): Promise<void> {
     const check =
       runtimeRole.length === 0
         ? await prisma.$queryRawUnsafe<{ can: boolean }[]>(
-            `select has_role('app_user', 'MEMBER') as can`,
+            `select pg_has_role(current_user::name, 'app_user'::name, 'MEMBER'::text) as can`,
           )
         : await prisma.$queryRawUnsafe<{ can: boolean }[]>(
-            `select pg_has_role($1, 'app_user', 'MEMBER') as can`,
+            `select pg_has_role($1::name, 'app_user'::name, 'MEMBER'::text) as can`,
             runtimeUser,
           );
 
