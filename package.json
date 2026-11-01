@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "BMS / RentFlow — multi-tenant building & property management platform for residential associations",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
