@@ -15,8 +15,8 @@ import { currencyUnit, formatMoney, round2 } from "@/lib/format";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/preferences";
 import { resolvePeriod } from "@/lib/period";
-import { loadAllSnapshots } from "@/lib/queries";
-import { isDemoMode, tenantStore } from "@/lib/store";
+import { loadAllSnapshots, loadBuildingList } from "@/lib/queries";
+import { isDemoMode } from "@/lib/store";
 
 export const metadata: Metadata = { title: "نظرة عامة" };
 
@@ -45,7 +45,7 @@ export default async function AdminOverviewPage({
   ];
 
   const scopeOptions: ScopeOption[] = (
-    await tenantStore(user).listBuildings()
+    await loadBuildingList(user)
   ).map((row) => ({ label: row.name, href: `/buildings/${row.id}` }));
 
   const totals = {

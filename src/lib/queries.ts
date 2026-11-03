@@ -98,13 +98,107 @@ async function buildSnapshot(
   };
 }
 
+/**
+ * The database sits behind a pooler in another region, so every query costs
+ * hundreds of milliseconds. Switching tabs asks for the same snapshot over and
+ * over, so it is kept for a short while and dropped as soon as something is
+ * written.
+ */
+const SNAPSHOT_TTL_MS = 45_000;
+
+type CacheEntry = { expires: number; value: BuildingSnapshot };
+type ListingEntry = { expires: number; value: BuildingRecord[] };
+
+const snapshotCache = new Map<string, CacheEntry>();
+const listingCache = new Map<string, ListingEntry>();
+const recordCache = new Map<string, { expires: number; value: BuildingRecord | null }>();
+const pendingSnapshots = new Map<string, Promise<BuildingSnapshot | null>>();
+
+function snapshotKey(
+  context: TenantContext,
+  buildingId: string,
+  year: number,
+  month: number,
+): string {
+  return `${context.id}:${context.role}:${buildingId}:${year}:${month}`;
+}
+
+/** Drops the cached snapshots of one association, or all of them. */
+export function invalidateSnapshots(buildingId?: string): void {
+  const matches = (key: string) =>
+    buildingId === undefined || key.includes(`:${buildingId}:`);
+
+  for (const key of snapshotCache.keys()) if (matches(key)) snapshotCache.delete(key);
+  for (const key of pendingSnapshots.keys()) if (matches(key)) pendingSnapshots.delete(key);
+  for (const key of recordCache.keys()) if (matches(key)) recordCache.delete(key);
+  if (buildingId === undefined) listingCache.clear();
+}
+
+/** One association, for the sidebar and the page headers. */
+export async function loadBuildingRecord(
+  context: TenantContext,
+  buildingId: string,
+): Promise<BuildingRecord | null> {
+  const key = `${context.id}:${context.role}:${buildingId}:record`;
+  const hit = recordCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+
+  const building = await tenantStore(context).getBuilding(buildingId);
+  recordCache.set(key, { expires: Date.now() + SNAPSHOT_TTL_MS, value: building });
+  return building;
+}
+
+/** Every association the caller may see. */
+export async function loadBuildingList(context: TenantContext): Promise<BuildingRecord[]> {
+  return cachedBuildings(context);
+}
+
+async function cachedSnapshot(
+  context: TenantContext,
+  buildingId: string,
+  year: number,
+  month: number,
+): Promise<BuildingSnapshot | null> {
+  const key = snapshotKey(context, buildingId, year, month);
+
+  const hit = snapshotCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+
+  const pending = pendingSnapshots.get(key);
+  if (pending) return pending;
+
+  const promise = buildSnapshot(tenantStore(context), buildingId, year, month)
+    .then((snapshot) => {
+      if (snapshot) {
+        snapshotCache.set(key, { expires: Date.now() + SNAPSHOT_TTL_MS, value: snapshot });
+      }
+      return snapshot;
+    })
+    .finally(() => {
+      pendingSnapshots.delete(key);
+    });
+
+  pendingSnapshots.set(key, promise);
+  return promise;
+}
+
+async function cachedBuildings(context: TenantContext): Promise<BuildingRecord[]> {
+  const key = `${context.id}:${context.role}:buildings`;
+  const hit = listingCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+
+  const buildings = await tenantStore(context).listBuildings();
+  listingCache.set(key, { expires: Date.now() + SNAPSHOT_TTL_MS, value: buildings });
+  return buildings;
+}
+
 export async function loadBuildingSnapshot(
   context: TenantContext,
   buildingId: string,
   year = CURRENT_YEAR,
   month = CURRENT_MONTH,
 ): Promise<BuildingSnapshot | null> {
-  return buildSnapshot(tenantStore(context), buildingId, year, month);
+  return cachedSnapshot(context, buildingId, year, month);
 }
 
 /**
@@ -124,10 +218,9 @@ export async function loadAllSnapshots(
   year = CURRENT_YEAR,
   month = CURRENT_MONTH,
 ): Promise<BuildingSnapshot[]> {
-  const data = tenantStore(context);
-  const buildings = await data.listBuildings();
+  const buildings = await cachedBuildings(context);
   const snapshots = await Promise.all(
-    buildings.map((building) => buildSnapshot(data, building.id, year, month)),
+    buildings.map((building) => cachedSnapshot(context, building.id, year, month)),
   );
   return snapshots.filter((snapshot): snapshot is BuildingSnapshot => snapshot !== null);
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireBuildingAccess, requireUser } from "@/lib/auth";
 import { removeFromImageKit } from "@/lib/imagekit";
+import { invalidateSnapshots } from "@/lib/queries";
 import { isDemoMode } from "@/lib/store";
 
 const schema = z.object({
@@ -66,6 +67,7 @@ export async function saveImageAction(
       }
       revalidatePath(`/buildings/${entityId}/settings`);
       revalidatePath(`/buildings/${entityId}/financial-summary`);
+      invalidateSnapshots(entityId);
     } else if (target === "unit-photo") {
       const unit = await db.unit.findUnique({
         where: { id: entityId },
@@ -75,6 +77,7 @@ export async function saveImageAction(
       await requireBuildingAccess(unit.buildingId);
       await db.unit.update({ where: { id: entityId }, data: { photoUrl: url } });
       revalidatePath(`/buildings/${unit.buildingId}/units`);
+      invalidateSnapshots(unit.buildingId);
     } else {
       if (session.role !== "ADMIN" && session.id !== entityId) {
         return { status: "error", message: "FORBIDDEN" };

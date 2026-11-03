@@ -40,11 +40,11 @@ export async function withTenant<T>(
   // two second wait is too short for that on a shared pooler.
   return prisma.$transaction(
     async (tx) => {
-      await tx.$queryRaw`select set_config('request.jwt.claims', ${claimsFor(context)}, true)`;
-
+      // One round trip for both settings: the pooler sits far away and every
+      // extra statement is another round trip.
       if (RUNTIME_ROLE !== "none") {
         try {
-          await tx.$queryRaw`select set_config('role', ${RUNTIME_ROLE}, true)`;
+          await tx.$queryRaw`select set_config('request.jwt.claims', ${claimsFor(context)}, true), set_config('role', ${RUNTIME_ROLE}, true)`;
         } catch {
           throw new Error(
             `DATABASE_RUNTIME_ROLE "${RUNTIME_ROLE}" cannot be assumed by the database role. ` +
@@ -52,6 +52,8 @@ export async function withTenant<T>(
               "role, or set DATABASE_RUNTIME_ROLE=none to run without database-level isolation.",
           );
         }
+      } else {
+        await tx.$queryRaw`select set_config('request.jwt.claims', ${claimsFor(context)}, true)`;
       }
 
       return run(tx);

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { databaseConfigured } from "@/lib/db";
 import { tenantDb } from "@/lib/db/tenant";
+import { invalidateSnapshots } from "@/lib/queries";
 
 export type UserActionState = {
   status: "idle" | "ok" | "error";
@@ -83,6 +84,7 @@ export async function createUserAction(
   });
 
   revalidatePath("/users");
+  invalidateSnapshots();
 
   return { status: "ok" };
 }

@@ -3,7 +3,7 @@ import { AppShell, type NavGroup, type ScopeOption } from "@/components/shell/Ap
 import { requireBuildingAccess } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/preferences";
-import { tenantStore } from "@/lib/store";
+import { loadBuildingList, loadBuildingRecord } from "@/lib/queries";
 
 export default async function BuildingLayout({
   children,
@@ -12,7 +12,7 @@ export default async function BuildingLayout({
   const { id } = await params;
   const user = await requireBuildingAccess(id);
 
-  const building = await tenantStore(user).getBuilding(id);
+  const building = await loadBuildingRecord(user, id);
   if (!building) notFound();
 
   const locale = await getLocale();
@@ -43,7 +43,7 @@ export default async function BuildingLayout({
 
   let options: ScopeOption[] = [];
   if (user.role === "ADMIN") {
-    const all = await tenantStore(user).listBuildings();
+    const all = await loadBuildingList(user);
     options = [
       { label: dict["nav.allAssociations"], href: "/" },
       ...all.map((row) => ({

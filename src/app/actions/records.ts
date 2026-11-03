@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireBuildingAccess, requireUser } from "@/lib/auth";
 import { databaseConfigured } from "@/lib/db";
 import { tenantDb } from "@/lib/db/tenant";
+import { invalidateSnapshots } from "@/lib/queries";
 import {
   buildingProfileSchema,
   buildingSchema,
@@ -42,6 +43,7 @@ function optionalText(formData: FormData, key: string): string {
 
 function revalidateBuilding(buildingId: string, ...paths: string[]): void {
   for (const path of paths) revalidatePath(`/buildings/${buildingId}${path}`);
+  invalidateSnapshots(buildingId);
 }
 
 /* ------------------------------------------------------------------ *
@@ -795,6 +797,7 @@ export async function createBuildingAction(
   });
 
   revalidatePath("/");
+  invalidateSnapshots();
   redirect(`/buildings/${id}`);
 }
 
