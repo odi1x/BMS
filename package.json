@@ -19,6 +19,7 @@
     "db:setup": "tsx scripts/db-setup.ts",
     "db:doctor": "tsx scripts/db-doctor.ts",
     "db:check-rls": "tsx --conditions=react-server scripts/rls-runtime-check.ts",
+    "db:reset": "tsx scripts/db-reset.ts",
     "db:grant": "tsx scripts/grant-runtime-role.ts",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"
