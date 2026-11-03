@@ -87,7 +87,7 @@ export async function AppShell({ user, groups, scope, children }: ShellProps) {
           )}
         </div>
 
-        <div className="mt-5 flex-1">
+        <div className="sidebar-nav mt-5 flex-1">
           <NavLinks groups={groups} mainLabel={dict["nav.main"]} />
         </div>
 
@@ -96,11 +96,13 @@ export async function AppShell({ user, groups, scope, children }: ShellProps) {
           <p className="truncate text-[11px] text-ink-faint">
             {user.role === "ADMIN" ? dict["nav.admin"] : dict["nav.manager"]}
           </p>
-          <div className="mt-2 flex items-center gap-1">
-            <LanguageToggle locale={locale} label={dict["common.language"]} />
-            <ThemeToggle theme={theme} label={dict["common.theme"]} />
-            <form action={signOutAction} className="ms-auto">
-              <button type="submit" className="btn btn-ghost btn-sm">
+          <div className="mt-2 flex flex-col gap-1.5">
+            <div className="flex items-center gap-1">
+              <LanguageToggle locale={locale} label={dict["common.language"]} />
+              <ThemeToggle theme={theme} label={dict["common.theme"]} />
+            </div>
+            <form action={signOutAction}>
+              <button type="submit" className="btn btn-ghost btn-sm w-full justify-center">
                 {dict["nav.signOut"]}
               </button>
             </form>

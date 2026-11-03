@@ -37,13 +37,13 @@ export function PeriodPicker({
       data-pending={pending ? "true" : "false"}
       aria-busy={pending}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <label className="sr-only" htmlFor="period-year">
           {labels.fiscalYear}
         </label>
         <select
           id="period-year"
-          className="select w-auto"
+          className="select select-year"
           value={period.year}
           onChange={(event) => apply({ ...period, year: Number(event.target.value) })}
         >
@@ -64,7 +64,7 @@ export function PeriodPicker({
             </label>
             <select
               id="period-month"
-              className="select w-auto"
+              className="select select-month"
               value={period.month}
               onChange={(event) => apply({ ...period, month: Number(event.target.value) })}
             >

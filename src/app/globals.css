@@ -235,10 +235,17 @@ p {
   top: 0;
   align-self: start;
   height: 100dvh;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 18px 12px 14px;
   border-inline-end: 1px solid var(--line);
   background: var(--ground);
+}
+
+/* The navigation scrolls on its own, the panel itself never does. */
+.sidebar-nav {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .canvas {
@@ -642,6 +649,17 @@ p {
   border-color: var(--ink-faint);
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-tint); /* taste-skill-ignore */
+}
+
+/* Compact selects: the period filter needs room for "أغسطس (8)". */
+.select-year {
+  width: auto;
+  min-width: 5.5rem;
+}
+
+.select-month {
+  width: auto;
+  min-width: 10.5rem;
 }
 
 .input::placeholder,
