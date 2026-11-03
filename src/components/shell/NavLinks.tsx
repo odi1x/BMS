@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
@@ -47,6 +47,11 @@ export type NavGroup = {
   items: NavItem[];
 };
 
+function LinkPending() {
+  const { pending } = useLinkStatus();
+  return <span aria-hidden data-pending={pending ? "true" : "false"} />;
+}
+
 export function NavLinks({
   groups,
   mainLabel = "التنقل الرئيسي",
@@ -76,6 +81,7 @@ export function NavLinks({
                     {item.count ? (
                       <span className="nav-count num">{item.count}</span>
                     ) : null}
+                    <LinkPending />
                   </Link>
                 </li>
               );

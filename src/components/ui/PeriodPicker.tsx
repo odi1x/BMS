@@ -33,7 +33,7 @@ export function PeriodPicker({
 
   return (
     <div
-      className="mb-4 flex flex-wrap items-center gap-2"
+      className="period-picker mb-4 flex flex-wrap items-center gap-2"
       data-pending={pending ? "true" : "false"}
       aria-busy={pending}
     >

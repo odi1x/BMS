@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Search } from "lucide-react";
 
 export function UnitFilters({
@@ -24,6 +24,7 @@ export function UnitFilters({
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(initial.q);
   const [syncedQuery, setSyncedQuery] = useState(initial.q);
+  const [pending, startTransition] = useTransition();
 
   if (initial.q !== syncedQuery) {
     setSyncedQuery(initial.q);
@@ -34,11 +35,17 @@ export function UnitFilters({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
-    router.replace(`?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`?${params.toString()}`, { scroll: false });
+    });
   };
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div
+      className="unit-filters mb-4 flex flex-wrap items-center gap-2"
+      data-pending={pending ? "true" : "false"}
+      aria-busy={pending}
+    >
       <form
         className="relative min-w-[240px] flex-1 sm:max-w-[320px]"
         onSubmit={(event) => {

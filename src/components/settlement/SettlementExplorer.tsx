@@ -83,8 +83,14 @@ export function SettlementExplorer({
   children,
 }: SettlementExplorerProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [animated, setAnimated] = useState(false);
   const floors = useMemo(() => groupByFloor(units), [units]);
   const selected = selectedId ? units.find((unit) => unit.unitId === selectedId) ?? null : null;
+
+  const pick = (unitId: string | null) => {
+    setAnimated(true);
+    setSelectedId(unitId);
+  };
 
   const dateFormat = locale === "ar" ? "ar-SA" : "en-GB";
 
@@ -123,7 +129,7 @@ export function SettlementExplorer({
                         aria-pressed={isSelected}
                         aria-label={`${labels.unit} ${unit.unitNumber} — ${state}`}
                         title={`${labels.unit} ${unit.unitNumber} — ${state}`}
-                        onClick={() => setSelectedId(isSelected ? null : unit.unitId)}
+                        onClick={() => pick(isSelected ? null : unit.unitId)}
                       />
                     );
                   })}
@@ -153,7 +159,11 @@ export function SettlementExplorer({
       </section>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-        <section className="panel lg:col-span-2">
+        <section
+          key={selected?.unitId ?? "building"}
+          className="panel settlement-body lg:col-span-2"
+          data-animated={animated ? "true" : "false"}
+        >
           <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3">
             <div className="min-w-0">
               <h2 className="panel-title">
@@ -171,7 +181,7 @@ export function SettlementExplorer({
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setSelectedId(null)}
+                onClick={() => pick(null)}
               >
                 {labels.clear}
               </button>
