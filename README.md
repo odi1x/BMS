@@ -63,6 +63,13 @@ npm run db:check-rls   # يثبت أن العزل على مستوى الصفوف
 npm run dev
 ```
 
+`DATABASE_URL` may point at the transaction pooler (6543) or at the direct host
+(5432). The pooler is the safe default for serverless (Vercel), but it resolves
+over IPv4 and that route can be very slow from some networks — measured here at
+~600 ms per query versus ~120 ms for the direct host, which resolves over IPv6.
+Whichever you pick, keep `connection_limit=5` and keep the runtime role grant
+(`GRANT app_user TO <the user in DATABASE_URL>`).
+
 `npm run db:setup` detects an empty database, an old schema that still has the
 `BuildingUser` table, or a database that is already on the current shape, and
 migrates accordingly without losing rows.
@@ -102,7 +109,7 @@ See `.env.example` for the full list. Summary:
 
 | Variable | Required | Purpose |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | for writes | Runtime connection — Supabase transaction pooler (6543) with `pgbouncer=true` |
+| `DATABASE_URL` | for writes | Runtime connection — Supabase transaction pooler (6543) with `pgbouncer=true`, or the direct host (5432) when the pooler's route from your network is slow |
 | `DIRECT_URL` | for migrations | Direct (5432) or session-pooler connection used by the Prisma CLI |
 | `DATABASE_RUNTIME_ROLE` | optional | Role Prisma assumes inside the transaction (`app_user`, default) |
 | `SESSION_SECRET` | production | Signs the session cookie and public download links |

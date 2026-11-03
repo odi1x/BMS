@@ -10,8 +10,8 @@ import {
   type CategoryTotal,
   type SettlementSummary,
 } from "@/lib/analytics";
-import { store, tenantStore, type Store } from "@/lib/store";
-import type { TenantContext } from "@/lib/db/tenant";
+import { store, tenantStore, tenantStoreIn, type Store } from "@/lib/store";
+import { withTenant, type TenantContext } from "@/lib/db/tenant";
 import type {
   BuildingRecord,
   ContractRecord,
@@ -112,6 +112,7 @@ type ListingEntry = { expires: number; value: BuildingRecord[] };
 const snapshotCache = new Map<string, CacheEntry>();
 const listingCache = new Map<string, ListingEntry>();
 const recordCache = new Map<string, { expires: number; value: BuildingRecord | null }>();
+const allSnapshotsCache = new Map<string, { expires: number; value: BuildingSnapshot[] }>();
 const pendingSnapshots = new Map<string, Promise<BuildingSnapshot | null>>();
 
 function snapshotKey(
@@ -132,6 +133,7 @@ export function invalidateSnapshots(buildingId?: string): void {
   for (const key of pendingSnapshots.keys()) if (matches(key)) pendingSnapshots.delete(key);
   for (const key of recordCache.keys()) if (matches(key)) recordCache.delete(key);
   if (buildingId === undefined) listingCache.clear();
+  allSnapshotsCache.clear();
 }
 
 /** One association, for the sidebar and the page headers. */
@@ -167,7 +169,9 @@ async function cachedSnapshot(
   const pending = pendingSnapshots.get(key);
   if (pending) return pending;
 
-  const promise = buildSnapshot(tenantStore(context), buildingId, year, month)
+  const promise = withTenant(context, (tx) =>
+    buildSnapshot(tenantStoreIn(tx), buildingId, year, month),
+  )
     .then((snapshot) => {
       if (snapshot) {
         snapshotCache.set(key, { expires: Date.now() + SNAPSHOT_TTL_MS, value: snapshot });
@@ -218,9 +222,19 @@ export async function loadAllSnapshots(
   year = CURRENT_YEAR,
   month = CURRENT_MONTH,
 ): Promise<BuildingSnapshot[]> {
+  const key = `${context.id}:${context.role}:all:${year}:${month}`;
+  const hit = allSnapshotsCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+
   const buildings = await cachedBuildings(context);
-  const snapshots = await Promise.all(
-    buildings.map((building) => cachedSnapshot(context, building.id, year, month)),
-  );
-  return snapshots.filter((snapshot): snapshot is BuildingSnapshot => snapshot !== null);
+  const snapshots = await withTenant(context, async (tx) => {
+    const data = tenantStoreIn(tx);
+    const all = await Promise.all(
+      buildings.map((building) => buildSnapshot(data, building.id, year, month)),
+    );
+    return all.filter((snapshot): snapshot is BuildingSnapshot => snapshot !== null);
+  });
+
+  allSnapshotsCache.set(key, { expires: Date.now() + SNAPSHOT_TTL_MS, value: snapshots });
+  return snapshots;
 }

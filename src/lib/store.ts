@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Prisma } from "@prisma/client";
 import { databaseConfigured, prisma } from "@/lib/db";
 import { withTenant, type TenantContext } from "@/lib/db/tenant";
 import {
@@ -139,72 +140,95 @@ const prismaStore: Store = {
   },
 };
 
-const scopedStore = (context: TenantContext): Store => ({
-  async listBuildings() {
-    return withTenant(context, (tx) =>
-      tx.building.findMany({ orderBy: { createdAt: "asc" } }),
-    );
-  },
-  async getBuilding(id) {
-    return withTenant(context, (tx) => tx.building.findUnique({ where: { id } }));
-  },
-  async listUnits(buildingId) {
-    return withTenant(context, (tx) =>
-      tx.unit.findMany({
+export function tenantStoreIn(tx: Prisma.TransactionClient): Store {
+  return {
+    async listBuildings() {
+      return tx.building.findMany({ orderBy: { createdAt: "asc" } });
+    },
+    async getBuilding(id) {
+      return tx.building.findUnique({ where: { id } });
+    },
+    async listUnits(buildingId) {
+      return tx.unit.findMany({
         where: { buildingId },
         orderBy: [{ floor: "asc" }, { unitNumber: "asc" }],
-      }),
-    );
-  },
-  async listRevenues(buildingId, year, month) {
-    return withTenant(context, (tx) =>
-      tx.revenue.findMany({
+      });
+    },
+    async listRevenues(buildingId, year, month) {
+      return tx.revenue.findMany({
         where: {
           buildingId,
           fiscalYear: year,
           ...(month === undefined ? {} : { fiscalMonth: month }),
         },
         orderBy: [{ date: "asc" }, { voucherNo: "asc" }],
-      }),
-    );
-  },
-  async getRevenue(buildingId, id) {
-    return withTenant(context, (tx) => tx.revenue.findFirst({ where: { id, buildingId } }));
-  },
-  async listExpenses(buildingId, year, month) {
-    return withTenant(context, (tx) =>
-      tx.expense.findMany({
+      });
+    },
+    async getRevenue(buildingId, id) {
+      return tx.revenue.findFirst({ where: { id, buildingId } });
+    },
+    async listExpenses(buildingId, year, month) {
+      return tx.expense.findMany({
         where: {
           buildingId,
           fiscalYear: year,
           ...(month === undefined ? {} : { fiscalMonth: month }),
         },
         orderBy: [{ fiscalMonth: "asc" }, { itemNo: "asc" }],
-      }),
-    );
-  },
-  async listUtilityBills(buildingId, year, month) {
-    return withTenant(context, (tx) =>
-      tx.utilityBill.findMany({
+      });
+    },
+    async listUtilityBills(buildingId, year, month) {
+      return tx.utilityBill.findMany({
         where: {
           buildingId,
           fiscalYear: year,
           ...(month === undefined ? {} : { fiscalMonth: month }),
         },
         orderBy: [{ paymentDate: "asc" }],
-      }),
-    );
+      });
+    },
+    async listContracts(buildingId) {
+      return tx.contract.findMany({ where: { buildingId }, orderBy: { startDate: "asc" } });
+    },
+    async listUsers() {
+      return tx.profile.findMany({ orderBy: { name: "asc" } });
+    },
+    async findUserByEmail(email) {
+      return tx.profile.findUnique({ where: { email } });
+    },
+  };
+}
+
+const scopedStore = (context: TenantContext): Store => ({
+  async listBuildings() {
+    return withTenant(context, (tx) => tenantStoreIn(tx).listBuildings());
+  },
+  async getBuilding(id) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).getBuilding(id));
+  },
+  async listUnits(buildingId) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).listUnits(buildingId));
+  },
+  async listRevenues(buildingId, year, month) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).listRevenues(buildingId, year, month));
+  },
+  async getRevenue(buildingId, id) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).getRevenue(buildingId, id));
+  },
+  async listExpenses(buildingId, year, month) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).listExpenses(buildingId, year, month));
+  },
+  async listUtilityBills(buildingId, year, month) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).listUtilityBills(buildingId, year, month));
   },
   async listContracts(buildingId) {
-    return withTenant(context, (tx) =>
-      tx.contract.findMany({ where: { buildingId }, orderBy: { startDate: "asc" } }),
-    );
+    return withTenant(context, (tx) => tenantStoreIn(tx).listContracts(buildingId));
   },
   async listUsers() {
-    return withTenant(context, (tx) => tx.profile.findMany({ orderBy: { name: "asc" } }));
+    return withTenant(context, (tx) => tenantStoreIn(tx).listUsers());
   },
   async findUserByEmail(email) {
-    return withTenant(context, (tx) => tx.profile.findUnique({ where: { email } }));
+    return withTenant(context, (tx) => tenantStoreIn(tx).findUserByEmail(email));
   },
 });
 
