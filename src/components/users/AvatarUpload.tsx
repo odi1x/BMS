@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { saveImageAction, IDLE_IMAGE_STATE } from "@/app/actions/images";
+import { saveImageAction } from "@/app/actions/images";
+import { IDLE_IMAGE_STATE } from "@/lib/action-state";
 import { ImageKitUpload } from "@/components/upload/ImageKitUpload";
 
 export function AvatarUpload({

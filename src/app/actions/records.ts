@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBuildingAccess, requireUser } from "@/lib/auth";
+import { type ActionState } from "@/lib/action-state";
 import { databaseConfigured } from "@/lib/db";
 import { tenantDb } from "@/lib/db/tenant";
 import { invalidateSnapshots } from "@/lib/queries";
@@ -20,18 +21,23 @@ import {
   unitUpdateSchema,
   utilityBillSchema,
   utilityBillUpdateSchema,
-  type FieldErrors,
 } from "@/lib/validation";
 
-export type ActionState = {
-  status: "idle" | "ok" | "error";
-  message?: string;
-  errors?: FieldErrors;
-};
-
-export const IDLE_STATE: ActionState = { status: "idle" };
-
 const DEMO_MESSAGE = "قاعدة البيانات غير مهيأة · السجل التجريبي للقراءة فقط.";
+
+/** معرّف برج ASCII: يمر في ترويسات HTTP والمسارات دون ترميز. */
+function buildingIdFromName(name: string): string {
+  const slug = name
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^A-Za-z0-9-]/g, "")
+    .toLowerCase()
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 32);
+  const unique = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  return slug ? `bld-${slug}-${unique}` : `bld-${unique}`;
+}
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "");
@@ -777,12 +783,7 @@ export async function createBuildingAction(
     return { status: "error", message: DEMO_MESSAGE };
   }
 
-  const slug = parsed.data.name
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^\p{L}\p{N}-]/gu, "")
-    .slice(0, 48);
-  const id = `bld-${slug || "tower"}-${Date.now().toString(36)}`;
+  const id = buildingIdFromName(parsed.data.name);
 
   await db.building.create({
     data: {

@@ -2,7 +2,8 @@
 
 import { useActionState, useRef, useState } from "react";
 import { ImageKitUpload } from "@/components/upload/ImageKitUpload";
-import { IDLE_IMAGE_STATE, saveImageAction } from "@/app/actions/images";
+import { saveImageAction } from "@/app/actions/images";
+import { IDLE_IMAGE_STATE } from "@/lib/action-state";
 
 export function UnitPhotoUpload({
   unitId,

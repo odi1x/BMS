@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import {
   createUtilityBillAction,
   updateUtilityBillAction,
-  IDLE_STATE,
 } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 
 export type BillFormValues = {
   id?: string;

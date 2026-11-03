@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createRevenueAction, updateRevenueAction, IDLE_STATE } from "@/app/actions/records";
+import { createRevenueAction, updateRevenueAction } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 
 export type VoucherUnit = { id: string; unitNumber: string; ownerName: string | null };
 

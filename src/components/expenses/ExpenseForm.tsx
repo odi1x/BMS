@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createExpenseAction, updateExpenseAction, IDLE_STATE } from "@/app/actions/records";
+import { createExpenseAction, updateExpenseAction } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 
 export type ExpenseFormValues = {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createUnitAction, updateUnitAction, IDLE_STATE } from "@/app/actions/records";
+import { createUnitAction, updateUnitAction } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 
 export type UnitFormValues = {
   id?: string;

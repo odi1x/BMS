@@ -4,17 +4,10 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { type UserActionState } from "@/lib/action-state";
 import { databaseConfigured } from "@/lib/db";
 import { tenantDb } from "@/lib/db/tenant";
 import { invalidateSnapshots } from "@/lib/queries";
-
-export type UserActionState = {
-  status: "idle" | "ok" | "error";
-  message?: string;
-  errors?: Record<string, string>;
-};
-
-export const IDLE_USER_STATE: UserActionState = { status: "idle" };
 
 const schema = z.object({
   name: z.string().trim().min(2, "الاسم مطلوب").max(80),

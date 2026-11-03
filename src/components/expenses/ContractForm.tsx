@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createContractAction, updateContractAction, IDLE_STATE } from "@/app/actions/records";
+import { createContractAction, updateContractAction } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 
 export type ContractFormValues = {
   id?: string;

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createBuildingAction, IDLE_STATE } from "@/app/actions/records";
+import { createBuildingAction } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 
 export function NewBuildingForm({
   labels,

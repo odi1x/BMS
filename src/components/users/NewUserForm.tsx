@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createUserAction, IDLE_USER_STATE } from "@/app/actions/users";
+import { createUserAction } from "@/app/actions/users";
+import { IDLE_USER_STATE } from "@/lib/action-state";
 
 export function NewUserForm({
   buildings,

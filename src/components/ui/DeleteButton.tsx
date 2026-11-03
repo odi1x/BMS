@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { deleteRecordAction, IDLE_STATE, type DeletableKind } from "@/app/actions/records";
+import { deleteRecordAction, type DeletableKind } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 
 export function DeleteButton({
   kind,

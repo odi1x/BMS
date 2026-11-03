@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updateBuildingAction, IDLE_STATE } from "@/app/actions/records";
+import { updateBuildingAction } from "@/app/actions/records";
+import { IDLE_STATE } from "@/lib/action-state";
 import { ImageKitUpload } from "@/components/upload/ImageKitUpload";
 
 export type BuildingSettingsValues = {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireBuildingAccess, requireUser } from "@/lib/auth";
+import { type ImageActionState } from "@/lib/action-state";
 import { removeFromImageKit } from "@/lib/imagekit";
 import { invalidateSnapshots } from "@/lib/queries";
 import { isDemoMode } from "@/lib/store";
@@ -13,14 +14,6 @@ const schema = z.object({
   fileId: z.string().min(1),
   url: z.string().min(1),
 });
-
-export type ImageActionState = {
-  status: "idle" | "ok" | "error";
-  message?: string;
-  errors?: Record<string, string>;
-};
-
-export const IDLE_IMAGE_STATE: ImageActionState = { status: "idle" };
 
 export async function saveImageAction(
   _prev: ImageActionState,
