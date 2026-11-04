@@ -33,6 +33,15 @@ export async function GET(
 
   const data = context ? tenantStore(context) : store();
   const voucher = await data.getRevenue(id, voucherId);
+  console.log("[voucher.pdf] debug", JSON.stringify({
+    id,
+    voucherId,
+    hasContext: Boolean(context),
+    role: context?.role ?? null,
+    sessionBuildingId: context?.buildingId ?? null,
+    foundVoucher: Boolean(voucher),
+    ownerFound: Boolean(await store().getRevenue(id, voucherId)),
+  }));
   if (!voucher) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
