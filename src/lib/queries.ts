@@ -10,7 +10,7 @@ import {
   type CategoryTotal,
   type SettlementSummary,
 } from "@/lib/analytics";
-import { store, tenantStore, tenantStoreIn, type Store } from "@/lib/store";
+import { store, tenantStore, tenantStoreIn, type SnapshotBundle, type Store } from "@/lib/store";
 import { withTenant, type TenantContext } from "@/lib/db/tenant";
 import type {
   BuildingRecord,
@@ -48,25 +48,16 @@ export type BuildingSnapshot = {
   net: number;
 };
 
-async function buildSnapshot(
-  data: Store,
-  buildingId: string,
+function snapshotFromBundle(
+  bundle: SnapshotBundle,
   year: number,
   month: number,
-): Promise<BuildingSnapshot | null> {
-  const building = await data.getBuilding(buildingId);
-  if (!building) return null;
+): BuildingSnapshot {
+  const { building, units, yearRevenues, yearExpenses, yearBills, contracts } = bundle;
 
-  const [units, monthRevenues, monthExpenses, monthBills, yearRevenues, yearExpenses, contracts] =
-    await Promise.all([
-      data.listUnits(buildingId),
-      data.listRevenues(buildingId, year, month),
-      data.listExpenses(buildingId, year, month),
-      data.listUtilityBills(buildingId, year, month),
-      data.listRevenues(buildingId, year),
-      data.listExpenses(buildingId, year),
-      data.listContracts(buildingId),
-    ]);
+  const monthRevenues = yearRevenues.filter((row) => row.fiscalMonth === month);
+  const monthExpenses = yearExpenses.filter((row) => row.fiscalMonth === month);
+  const monthBills = yearBills.filter((row) => row.fiscalMonth === month);
 
   const settlement = settlementRows(units, yearRevenues, year);
   const monthRevenueTotal = monthRevenues.reduce((sum, row) => sum + row.amount, 0);
@@ -96,6 +87,16 @@ async function buildSnapshot(
     monthPowerTotal: Math.round(monthPowerTotal * 100) / 100,
     net: Math.round((monthRevenueTotal - monthExpenseTotal) * 100) / 100,
   };
+}
+
+async function buildSnapshot(
+  data: Store,
+  buildingId: string,
+  year: number,
+  month: number,
+): Promise<BuildingSnapshot | null> {
+  const bundle = await data.loadSnapshotBundle(buildingId, year);
+  return bundle ? snapshotFromBundle(bundle, year, month) : null;
 }
 
 /**
@@ -226,13 +227,9 @@ export async function loadAllSnapshots(
   const hit = allSnapshotsCache.get(key);
   if (hit && hit.expires > Date.now()) return hit.value;
 
-  const buildings = await cachedBuildings(context);
   const snapshots = await withTenant(context, async (tx) => {
-    const data = tenantStoreIn(tx);
-    const all = await Promise.all(
-      buildings.map((building) => buildSnapshot(data, building.id, year, month)),
-    );
-    return all.filter((snapshot): snapshot is BuildingSnapshot => snapshot !== null);
+    const bundles = await tenantStoreIn(tx).loadAllSnapshotBundles(year);
+    return bundles.map((bundle) => snapshotFromBundle(bundle, year, month));
   });
 
   allSnapshotsCache.set(key, { expires: Date.now() + SNAPSHOT_TTL_MS, value: snapshots });

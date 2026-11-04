@@ -22,6 +22,15 @@ import type {
   UtilityBillRecord,
 } from "@/lib/types";
 
+export type SnapshotBundle = {
+  building: BuildingRecord;
+  units: UnitRecord[];
+  yearRevenues: RevenueRecord[];
+  yearExpenses: ExpenseRecord[];
+  yearBills: UtilityBillRecord[];
+  contracts: ContractRecord[];
+};
+
 export type Store = {
   listBuildings(): Promise<BuildingRecord[]>;
   getBuilding(id: string): Promise<BuildingRecord | null>;
@@ -33,7 +42,40 @@ export type Store = {
   listContracts(buildingId: string): Promise<ContractRecord[]>;
   listUsers(): Promise<UserRecord[]>;
   findUserByEmail(email: string): Promise<UserRecord | null>;
+  loadSnapshotBundle(buildingId: string, year: number): Promise<SnapshotBundle | null>;
+  loadAllSnapshotBundles(year: number): Promise<SnapshotBundle[]>;
 };
+
+const snapshotInclude = (year: number) => ({
+  units: { orderBy: [{ floor: "asc" as const }, { unitNumber: "asc" as const }] },
+  revenues: {
+    where: { fiscalYear: year },
+    orderBy: [{ date: "asc" as const }, { voucherNo: "asc" as const }],
+  },
+  expenses: {
+    where: { fiscalYear: year },
+    orderBy: [{ fiscalMonth: "asc" as const }, { itemNo: "asc" as const }],
+  },
+  utilityBills: {
+    where: { fiscalYear: year },
+    orderBy: [{ paymentDate: "asc" as const }],
+  },
+  contracts: { orderBy: { startDate: "asc" as const } },
+});
+
+type SnapshotRow = Prisma.BuildingGetPayload<{ include: ReturnType<typeof snapshotInclude> }>;
+
+function bundleOf(row: SnapshotRow): SnapshotBundle {
+  const { units, revenues, expenses, utilityBills, contracts, ...building } = row;
+  return {
+    building,
+    units,
+    yearRevenues: revenues,
+    yearExpenses: expenses,
+    yearBills: utilityBills,
+    contracts,
+  };
+}
 
 const demoStore: Store = {
   async listBuildings() {
@@ -80,6 +122,30 @@ const demoStore: Store = {
   },
   async findUserByEmail(email) {
     return demoUsers.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? null;
+  },
+  async loadSnapshotBundle(buildingId, year) {
+    const building = demoBuildings.find((entry) => entry.id === buildingId);
+    if (!building) return null;
+    return {
+      building,
+      units: demoUnits.filter((unit) => unit.buildingId === buildingId),
+      yearRevenues: demoRevenues.filter(
+        (row) => row.buildingId === buildingId && row.fiscalYear === year,
+      ),
+      yearExpenses: demoExpenses.filter(
+        (row) => row.buildingId === buildingId && row.fiscalYear === year,
+      ),
+      yearBills: demoUtilityBills.filter(
+        (row) => row.buildingId === buildingId && row.fiscalYear === year,
+      ),
+      contracts: demoContracts.filter((row) => row.buildingId === buildingId),
+    };
+  },
+  async loadAllSnapshotBundles(year) {
+    const bundles = await Promise.all(
+      demoBuildings.map((building) => demoStore.loadSnapshotBundle(building.id, year)),
+    );
+    return bundles.filter((bundle): bundle is SnapshotBundle => bundle !== null);
   },
 };
 
@@ -137,6 +203,20 @@ const prismaStore: Store = {
   },
   async findUserByEmail(email) {
     return prisma.profile.findUnique({ where: { email } });
+  },
+  async loadSnapshotBundle(buildingId, year) {
+    const row = await prisma.building.findUnique({
+      where: { id: buildingId },
+      include: snapshotInclude(year),
+    });
+    return row ? bundleOf(row) : null;
+  },
+  async loadAllSnapshotBundles(year) {
+    const rows = await prisma.building.findMany({
+      orderBy: { createdAt: "asc" },
+      include: snapshotInclude(year),
+    });
+    return rows.map(bundleOf);
   },
 };
 
@@ -196,6 +276,20 @@ export function tenantStoreIn(tx: Prisma.TransactionClient): Store {
     async findUserByEmail(email) {
       return tx.profile.findUnique({ where: { email } });
     },
+    async loadSnapshotBundle(buildingId, year) {
+      const row = await tx.building.findUnique({
+        where: { id: buildingId },
+        include: snapshotInclude(year),
+      });
+      return row ? bundleOf(row) : null;
+    },
+    async loadAllSnapshotBundles(year) {
+      const rows = await tx.building.findMany({
+        orderBy: { createdAt: "asc" },
+        include: snapshotInclude(year),
+      });
+      return rows.map(bundleOf);
+    },
   };
 }
 
@@ -229,6 +323,12 @@ const scopedStore = (context: TenantContext): Store => ({
   },
   async findUserByEmail(email) {
     return withTenant(context, (tx) => tenantStoreIn(tx).findUserByEmail(email));
+  },
+  async loadSnapshotBundle(buildingId, year) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).loadSnapshotBundle(buildingId, year));
+  },
+  async loadAllSnapshotBundles(year) {
+    return withTenant(context, (tx) => tenantStoreIn(tx).loadAllSnapshotBundles(year));
   },
 });
 
