@@ -16,7 +16,8 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string; voucherId: string }> },
 ) {
-  const { id, voucherId } = await params;
+  const { id, voucherId: rawVoucherId } = await params;
+  const voucherId = rawVoucherId.replace(/\.pdf$/i, "");
   const url = new URL(request.url);
   const token = url.searchParams.get("token");
 
@@ -33,15 +34,6 @@ export async function GET(
 
   const data = context ? tenantStore(context) : store();
   const voucher = await data.getRevenue(id, voucherId);
-  console.log("[voucher.pdf] debug", JSON.stringify({
-    id,
-    voucherId,
-    hasContext: Boolean(context),
-    role: context?.role ?? null,
-    sessionBuildingId: context?.buildingId ?? null,
-    foundVoucher: Boolean(voucher),
-    ownerFound: Boolean(await store().getRevenue(id, voucherId)),
-  }));
   if (!voucher) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
