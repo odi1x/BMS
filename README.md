@@ -189,7 +189,14 @@ the underlying cause to the server output.
   public links use the first.
 - **Server Actions** — all mutations live in `src/app/actions/records.ts` and
   `src/app/actions/images.ts`, are Zod-validated, and revalidate the affected
-  routes.
+  routes. A `"use server"` module may only export async functions: the shared
+  state shapes and idle values live in `src/lib/action-state.ts`.
+- **One statement per page** — a building snapshot (units, revenues, expenses,
+  bills, contracts) is read with a single joined query. The `relationJoins`
+  preview feature in `prisma/schema.prisma` is what turns the relation
+  `include` into one statement instead of one query per relation; the
+  relations are aggregated to JSON inside the database, so the row count does
+  not multiply.
 - **Design system** — tokens live in `src/app/globals.css` and map the colour,
   radius, spacing and typography scales defined in `nouploadpdf-DESIGN.md`.
   Layout is flat: hairline borders instead of shadows, one accent green

@@ -100,10 +100,10 @@ async function buildSnapshot(
 }
 
 /**
- * The database sits behind a pooler in another region, so every query costs
- * hundreds of milliseconds. Switching tabs asks for the same snapshot over and
- * over, so it is kept for a short while and dropped as soon as something is
- * written.
+ * The snapshot of one association is read in a single statement (the relations
+ * are joined and aggregated inside the database), so a page render costs one
+ * round trip instead of nine. The result is kept for a short while and dropped
+ * as soon as something is written.
  */
 const SNAPSHOT_TTL_MS = 45_000;
 
