@@ -76,6 +76,7 @@ export async function GET(
     revenue: snapshot.monthRevenueTotal,
     expensesTotal: snapshot.monthExpenseTotal,
     net: snapshot.net,
+    fontBaseUrl: new URL(request.url).origin,
   });
 
   try {

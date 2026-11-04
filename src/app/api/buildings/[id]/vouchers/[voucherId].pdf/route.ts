@@ -62,6 +62,7 @@ export async function GET(
           : "أخرى / مواقف",
     hijriDate: formatHijri(voucher.date, locale),
     gregorianDate: formatShortDate(voucher.date, locale),
+    fontBaseUrl: new URL(request.url).origin,
   });
 
   try {

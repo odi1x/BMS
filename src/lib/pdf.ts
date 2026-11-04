@@ -18,21 +18,37 @@ export function chromeExecutable(): string | null {
   return CANDIDATE_PATHS.find((path) => existsSync(path)) ?? null;
 }
 
-export async function htmlToPdf(html: string): Promise<Uint8Array> {
-  const executablePath = chromeExecutable();
-  if (!executablePath) {
-    throw new Error("CHROME_NOT_FOUND");
+type BrowserTarget = { executablePath: string; args: string[] };
+
+/**
+ * On a developer machine the installed Chrome is used. Vercel has no browser
+ * at all, so the Chromium that ships with `@sparticuz/chromium` is unpacked
+ * into the function's temporary directory instead.
+ */
+async function browserTarget(): Promise<BrowserTarget> {
+  const local = chromeExecutable();
+  if (local) {
+    return {
+      executablePath: local,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    };
   }
 
-  const browser = await puppeteer.launch({
+  const chromium = await import("@sparticuz/chromium");
+  const executablePath = await chromium.default.executablePath();
+  return {
     executablePath,
+    args: [...chromium.default.args, "--font-render-hinting=none"],
+  };
+}
+
+export async function htmlToPdf(html: string): Promise<Uint8Array> {
+  const target = await browserTarget();
+
+  const browser = await puppeteer.launch({
+    executablePath: target.executablePath,
     headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ],
+    args: target.args,
   });
 
   try {

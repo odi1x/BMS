@@ -85,13 +85,29 @@ const BASE_CSS = `
   h1.title, .head { break-after: avoid; page-break-after: avoid; }
 `;
 
-export function documentShell(content: string): string {
+export function documentShell(content: string, fontBaseUrl: string): string {
+  const fontCss = `
+  @font-face {
+    font-family: "Noto Sans Arabic";
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url("${fontBaseUrl}/fonts/noto-sans-arabic-400.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Noto Sans Arabic";
+    font-style: normal;
+    font-weight: 700;
+    font-display: block;
+    src: url("${fontBaseUrl}/fonts/noto-sans-arabic-700.woff2") format("woff2");
+  }`;
+
   return `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8" />
 <title>مستند</title>
-<style>${BASE_CSS}</style>
+<style>${BASE_CSS}${fontCss}</style>
 </head>
 <body><div class="doc">${content}</div></body>
 </html>`;
@@ -108,6 +124,7 @@ export function statementHtml(input: {
   revenue: number;
   expensesTotal: number;
   net: number;
+  fontBaseUrl: string;
 }): string {
   const { building } = input;
 
@@ -181,7 +198,7 @@ export function statementHtml(input: {
       <span>آيبان الحساب: ${escapeHtml(building.iban) || "·"}</span>
       <span>التاريخ الهجري: ${escapeHtml(input.hijriDate)} · الموافق: ${escapeHtml(input.gregorianDate)}</span>
     </div>
-  `);
+  `, input.fontBaseUrl);
 }
 
 export function voucherHtml(input: {
@@ -195,6 +212,7 @@ export function voucherHtml(input: {
   channel: string;
   hijriDate: string;
   gregorianDate: string;
+  fontBaseUrl: string;
 }): string {
   const { building } = input;
 
@@ -245,5 +263,5 @@ export function voucherHtml(input: {
       <span>${escapeHtml(building.name)}</span>
       <span>التاريخ الهجري: ${escapeHtml(input.hijriDate)} · الموافق: ${escapeHtml(input.gregorianDate)}</span>
     </div>
-  `);
+  `, input.fontBaseUrl);
 }
