@@ -169,7 +169,8 @@ Vouchers and statements are rendered as HTML and converted with `puppeteer-core`
   stay outside the bundler and its binaries have to be traced into the function,
   which `next.config.ts` does through `serverExternalPackages` and
   `outputFileTracingIncludes`. The first request on a cold instance pays for the
-  unpacking, later ones reuse it.
+  unpacking, later ones reuse it. The API routes share one function, so that
+  function grows to roughly 100 MB; the pages stay at their own size.
 - **Arabic type** comes from `public/fonts/noto-sans-arabic-400.woff2` and
   `public/fonts/noto-sans-arabic-700.woff2`. The document HTML embeds them with
   `@font-face`, because the serverless Chromium only ships Open Sans and would
