@@ -161,8 +161,19 @@ Isolation is enforced by Postgres, not only by the application code:
 ## PDF generation
 
 Vouchers and statements are rendered as HTML and converted with `puppeteer-core`.
-A local Chrome or Chromium install is required — the binary is discovered
-automatically on Windows, macOS and Linux, or can be pinned with `CHROME_PATH`.
+
+- **On a workstation** the installed Chrome or Chromium is discovered
+  automatically on Windows, macOS and Linux, or can be pinned with `CHROME_PATH`.
+- **On Vercel** there is no browser in the runtime image, so `@sparticuz/chromium`
+  is unpacked into the function's temporary directory instead. The package has to
+  stay outside the bundler and its binaries have to be traced into the function,
+  which `next.config.ts` does through `serverExternalPackages` and
+  `outputFileTracingIncludes`. The first request on a cold instance pays for the
+  unpacking, later ones reuse it.
+- **Arabic type** comes from `public/fonts/noto-sans-arabic-400.woff2` and
+  `public/fonts/noto-sans-arabic-700.woff2`. The document HTML embeds them with
+  `@font-face`, because the serverless Chromium only ships Open Sans and would
+  otherwise print empty boxes.
 
 For a container image, install Chromium at build time:
 
@@ -171,8 +182,8 @@ RUN apt-get update && apt-get install -y chromium fonts-noto-core fonts-noto-cjk
 ENV CHROME_PATH=/usr/bin/chromium
 ```
 
-If Chrome is missing, the PDF routes return `500 { error: "PDF_FAILED" }` and log
-the underlying cause to the server output.
+If no browser can be started, the PDF routes return `500 { error: "PDF_FAILED" }`
+and log the underlying cause to the server output.
 
 ---
 
@@ -201,6 +212,10 @@ the underlying cause to the server output.
   radius, spacing and typography scales defined in `nouploadpdf-DESIGN.md`.
   Layout is flat: hairline borders instead of shadows, one accent green
   reserved for money and success.
+- **Route segments** — Next 16 hands the whole segment to a dynamic route, so
+  the `[voucherId].pdf` folder delivers `rev-wafaa-41.pdf` as the parameter in a
+  production build while the dev server strips the suffix. The voucher route
+  trims it before looking the record up.
 
 ---
 
