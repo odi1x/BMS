@@ -22,6 +22,7 @@
     "db:reset": "tsx scripts/db-reset.ts",
     "db:grant": "tsx scripts/grant-runtime-role.ts",
     "db:seed": "tsx prisma/seed.ts",
+    "db:demo-seed": "tsx scripts/demo-seed.ts --force",
     "db:studio": "prisma studio"
   },
   "prisma": {
