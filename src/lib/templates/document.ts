@@ -40,7 +40,7 @@ const BASE_CSS = `
   body {
     margin: 0;
     padding: 16mm 14mm;
-    font-family: "Segoe UI", "Noto Sans Arabic", "Tahoma", Arial, sans-serif;
+    font-family: "Segoe UI", "Noto Naskh Arabic", "Tahoma", Arial, sans-serif;
     color: #17171a;
     background: #ffffff;
     font-size: 12.5px;
@@ -88,18 +88,18 @@ const BASE_CSS = `
 export function documentShell(content: string, fontBaseUrl: string): string {
   const fontCss = `
   @font-face {
-    font-family: "Noto Sans Arabic";
+    font-family: "Noto Naskh Arabic";
     font-style: normal;
     font-weight: 400;
     font-display: block;
-    src: url("${fontBaseUrl}/fonts/noto-sans-arabic-400.woff2") format("woff2");
+    src: url("${fontBaseUrl}/fonts/noto-naskh-arabic-400.woff2") format("woff2");
   }
   @font-face {
-    font-family: "Noto Sans Arabic";
+    font-family: "Noto Naskh Arabic";
     font-style: normal;
     font-weight: 700;
     font-display: block;
-    src: url("${fontBaseUrl}/fonts/noto-sans-arabic-700.woff2") format("woff2");
+    src: url("${fontBaseUrl}/fonts/noto-naskh-arabic-700.woff2") format("woff2");
   }`;
 
   return `<!doctype html>

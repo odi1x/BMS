@@ -5,8 +5,8 @@ import { loadEnvIntoProcess } from "./load-env";
 loadEnvIntoProcess();
 
 const prisma = new PrismaClient();
-const ADMIN_EMAIL = "admin@rentflow.sa";
-const ADMIN_PASSWORD = "123456";
+const ADMIN_EMAIL = "omar_admin@rentflow.sa";
+const ADMIN_PASSWORD = "omar1395";
 
 async function main() {
   const confirmed =
@@ -45,7 +45,7 @@ async function main() {
   await prisma.profile.create({
     data: {
       email: ADMIN_EMAIL,
-      name: "admin",
+      name: "omar_admin",
       passwordHash,
       role: "ADMIN",
     },

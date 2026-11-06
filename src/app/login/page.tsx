@@ -19,12 +19,6 @@ export default async function LoginPage() {
   const locale = await getLocale();
   const dict = getDict(locale);
 
-  const demoAccounts = [
-    { email: "admin@rentflow.sa", label: `${dict["nav.admin"]} · ${dict["nav.allAssociations"]}` },
-    { email: "supervisor@rentflow.sa", label: `${dict["nav.manager"]} · برج الوفاء` },
-    { email: "noor@rentflow.sa", label: `${dict["nav.manager"]} · برج النور` },
-  ];
-
   const jobs = [
     { title: dict["nav.revenues"], text: dict["revenues.subtitle"] },
     { title: dict["nav.expenses"], text: dict["expenses.subtitle"] },
@@ -51,24 +45,6 @@ export default async function LoginPage() {
                 requiredLabel={dict["auth.required"]}
               />
             </div>
-          </div>
-
-          <div className="panel mt-4 px-5 py-4">
-            <p className="text-[14px] font-medium">{dict["auth.demoTitle"]}</p>
-            <p className="mt-0.5 text-[13px] text-ink-faint">{dict["auth.demoHint"]}</p>
-            <ul className="mt-3 flex flex-col border-t border-divider">
-              {demoAccounts.map((account) => (
-                <li
-                  key={account.email}
-                  className="flex items-center justify-between gap-3 border-b border-divider py-2 last:border-b-0"
-                >
-                  <span className="truncate text-[13px] text-ink-muted">{account.label}</span>
-                  <span className="num text-[13px] text-ink-faint" dir="ltr">
-                    {account.email}
-                  </span>
-                </li>
-              ))}
-            </ul>
           </div>
         </section>
 

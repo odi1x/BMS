@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, JetBrains_Mono, Noto_Sans_Arabic } from "next/font/google"; /* taste-skill-ignore */
+import { Instrument_Sans, JetBrains_Mono, IBM_Plex_Sans_Arabic } from "next/font/google"; /* taste-skill-ignore */
 import "./globals.css";
 import { getLocale, getTheme } from "@/lib/preferences";
 
@@ -9,8 +9,9 @@ const latin = Instrument_Sans({
   display: "swap",
 });
 
-const arabic = Noto_Sans_Arabic({
+const arabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-arabic",
   display: "swap",
 });
