@@ -139,6 +139,18 @@ async function main() {
     },
   });
 
+  // CV interviewer admin account
+  await prisma.profile.create({
+    data: {
+      id: uuid(),
+      email: "omar_admin@rentflow.sa",
+      name: "omar_admin",
+      passwordHash: await bcrypt.hash("omar1395", 10),
+      role: "ADMIN",
+      buildingId: null,
+    },
+  });
+
   const buildingCount = randInt(3, 5);
   const buildings: { id: string; name: string }[] = [];
   const usedTowers = new Set<string>();
@@ -211,7 +223,7 @@ async function main() {
     for (let m = 1; m <= 12; m++) {
       const roll = Math.random();
       let amount = 0;
-      let channel = "BANK_TRANSFER";
+      let channel: "CASH" | "BANK_TRANSFER" | "OTHER" = "BANK_TRANSFER";
       if (roll < 0.7) amount = monthly;
       else if (roll < 0.85) amount = monthly / 2;
       else amount = 0;
